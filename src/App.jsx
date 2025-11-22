@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { GoogleGenAI } from '@google/genai';
 import backgroundImage from './assets/Background.png';
 import tvImage from './assets/TV.png';
-import neutralImage from './assets/Los/Neutral.png';
-import smileImage from './assets/Los/Smile.png';
-import angryImage from './assets/Los/Angry.png';
-import aImage from './assets/Los/A.png';
-import eImage from './assets/Los/E.png';
-import iImage from './assets/Los/I.png';
-import uImage from './assets/Los/U.png';
+import neutralImageLos from './assets/Los/Neutral.png';
+import smileImageLos from './assets/Los/Smile.png';
+import angryImageLos from './assets/Los/Angry.png';
+import aImageLos from './assets/Los/A.png';
+import eImageLos from './assets/Los/E.png';
+import iImageLos from './assets/Los/I.png';
+import uImageLos from './assets/Los/U.png';
+import neutralImageMarc from './assets/Marc/Neutral.png';
+import smileImageMarc from './assets/Marc/Smile.png';
+import angryImageMarc from './assets/Marc/Angry.png';
+import aImageMarc from './assets/Marc/A.png';
+import eImageMarc from './assets/Marc/E.png';
+import iImageMarc from './assets/Marc/I.png';
+import uImageMarc from './assets/Marc/U.png';
 import handImage from './assets/hand.png';
 import writingImage from './assets/Writing.png';
 import dangertestingImage from './assets/dangertesting.png';
@@ -27,8 +35,35 @@ import yaySound from './assets/YAY Kids (Celebration) Sound Effect [Free Downloa
 import leavingSound from './assets/LeavingSound.mp3';
 
 function App() {
+  const location = useLocation();
+  
+  // Determine character based on route
+  const character = location.pathname === '/marc' ? 'Marc' : 'Los';
+  
   const [displayedText, setDisplayedText] = useState('');
-  const [currentMouthImage, setCurrentMouthImage] = useState(neutralImage);
+  const [currentMouthImage, setCurrentMouthImage] = useState(neutralImageLos);
+  
+  // Navigate to character route with page refresh
+  const handleCharacterClick = () => {
+    if (character === 'Los') {
+      window.location.href = '/marc';
+    } else {
+      window.location.href = '/';
+    }
+  };
+
+  // Replace "Los" with "Marc" when on /marc route
+  const replaceCharacterName = (text) => {
+    if (character === 'Marc') {
+      // Replace "Los:" with "Marc:"
+      text = text.replace(/Los:/g, 'Marc:');
+      // Replace "Los " with "Marc " (as a word boundary)
+      text = text.replace(/\bLos\b/g, 'Marc');
+      // Replace "los" with "marc" (lowercase)
+      text = text.replace(/\blos\b/g, 'marc');
+    }
+    return text;
+  };
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentDialogueIndex, setCurrentDialogueIndex] = useState(0);
   const [showButtons, setShowButtons] = useState(false);
@@ -85,7 +120,55 @@ function App() {
     ]
   });
   
-  const mouthImages = [aImage, eImage, iImage, uImage];
+  // Get images based on selected character
+  const getCharacterImages = () => {
+    if (character === 'Marc') {
+      return {
+        neutral: neutralImageMarc,
+        smile: smileImageMarc,
+        angry: angryImageMarc,
+        mouth: [aImageMarc, eImageMarc, iImageMarc, uImageMarc]
+      };
+    }
+    return {
+      neutral: neutralImageLos,
+      smile: smileImageLos,
+      angry: angryImageLos,
+      mouth: [aImageLos, eImageLos, iImageLos, uImageLos]
+    };
+  };
+
+  const characterImages = getCharacterImages();
+  const mouthImages = characterImages.mouth;
+  
+  // Update current mouth image when character changes (based on route)
+  useEffect(() => {
+    const images = getCharacterImages();
+    // Determine current expression type
+    if (currentMouthImage === neutralImageLos || currentMouthImage === neutralImageMarc) {
+      setCurrentMouthImage(images.neutral);
+    } else if (currentMouthImage === smileImageLos || currentMouthImage === smileImageMarc) {
+      setCurrentMouthImage(images.smile);
+    } else if (currentMouthImage === angryImageLos || currentMouthImage === angryImageMarc) {
+      setCurrentMouthImage(images.angry);
+    } else {
+      // For mouth images, find the matching one
+      const losMouths = [aImageLos, eImageLos, iImageLos, uImageLos];
+      const marcMouths = [aImageMarc, eImageMarc, iImageMarc, uImageMarc];
+      const currentIndex = losMouths.findIndex(img => currentMouthImage === img);
+      if (currentIndex !== -1) {
+        setCurrentMouthImage(images.mouth[currentIndex]);
+      } else {
+        const marcIndex = marcMouths.findIndex(img => currentMouthImage === img);
+        if (marcIndex !== -1) {
+          setCurrentMouthImage(images.mouth[marcIndex]);
+        } else {
+          setCurrentMouthImage(images.neutral);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
   
   const callGeminiAPI = async (appIdea) => {
     setIsReviewing(true);
@@ -249,11 +332,11 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
     setShowButtons(false);
     
     // Show smile for 2 seconds
-    setCurrentMouthImage(smileImage);
+    setCurrentMouthImage(characterImages.smile);
     
     setTimeout(() => {
       // Return to neutral and start yes path dialogue
-      setCurrentMouthImage(neutralImage);
+      setCurrentMouthImage(characterImages.neutral);
       setDialoguePath('yes');
       setCurrentDialogueIndex(0); // Start from beginning of yes path
     }, 2000);
@@ -264,11 +347,11 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
     setShowButtons(false);
     
     // Show angry face for 2 seconds
-    setCurrentMouthImage(angryImage);
+    setCurrentMouthImage(characterImages.angry);
     
     setTimeout(() => {
       // Return to neutral and start no path dialogue
-      setCurrentMouthImage(neutralImage);
+      setCurrentMouthImage(characterImages.neutral);
       setDialoguePath('no');
       setCurrentDialogueIndex(0); // Start from beginning of no path
     }, 2000);
@@ -541,7 +624,7 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
           
           // Stop speaking and return to neutral
           setIsSpeaking(false);
-          setCurrentMouthImage(neutralImage);
+          setCurrentMouthImage(characterImages.neutral);
           
           // Stop audio when typing is finished
           if (audioRef.current) {
@@ -661,7 +744,7 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
     return () => {
       if (cleanup) cleanup();
       setIsSpeaking(false);
-      setCurrentMouthImage(neutralImage);
+      setCurrentMouthImage(characterImages.neutral);
       
       // Clean up audio on unmount
       if (audioRef.current) {
@@ -798,7 +881,7 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
           className="text-white text-2xl"
           style={{ fontFamily: 'Times New Roman, serif' }}
         >
-          {displayedText}
+          {replaceCharacterName(displayedText)}
         </p>
       </div>
 
@@ -855,7 +938,7 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
         </div>
       )}
 
-      {/* Feed Los button */}
+      {/* Feed Los/Marc button */}
       {showFeedButton && (
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
           <button
@@ -863,7 +946,7 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
             style={{ fontFamily: 'Times New Roman, serif' }}
             onClick={handleFeedLos}
           >
-            feed los
+            {character === 'Marc' ? 'feed marc' : 'feed los'}
           </button>
         </div>
       )}
@@ -909,6 +992,15 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
           />
         </div>
       )}
+
+      {/* Character navigation button - bottom right */}
+      <button
+        onClick={handleCharacterClick}
+        className="fixed bottom-4 right-4 text-white text-lg underline opacity-50 hover:opacity-75 transition-opacity z-50"
+        style={{ fontFamily: 'Times New Roman, serif' }}
+      >
+        {character === 'Los' ? 'marc' : 'los'}
+      </button>
     </div>
   );
 }
