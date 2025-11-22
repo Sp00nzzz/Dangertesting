@@ -302,48 +302,30 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
   // Start background music on component mount
   useEffect(() => {
     const playBackgroundMusic = async () => {
-      // Start muted to bypass autoplay restrictions, then unmute
       if (backgroundMusicRef.current) {
-        backgroundMusicRef.current.muted = true;
         backgroundMusicRef.current.volume = 0.5; // Set to 50%
         try {
           await backgroundMusicRef.current.play();
-          // Unmute after a short delay to ensure playback started
-          setTimeout(() => {
-            if (backgroundMusicRef.current) {
-              backgroundMusicRef.current.muted = false;
-            }
-          }, 100);
         } catch (error) {
-          // If still blocked, try on user interaction
-          backgroundMusicRef.current.muted = false;
+          // Autoplay was prevented, will play on user interaction
         }
       }
       if (nightMusicRef.current) {
-        nightMusicRef.current.muted = true;
         nightMusicRef.current.volume = 0.2;
         try {
           await nightMusicRef.current.play();
-          // Unmute after a short delay
-          setTimeout(() => {
-            if (nightMusicRef.current) {
-              nightMusicRef.current.muted = false;
-            }
-          }, 100);
         } catch (error) {
-          // If still blocked, try on user interaction
-          nightMusicRef.current.muted = false;
+          // Autoplay was prevented, will play on user interaction
         }
       }
     };
 
     playBackgroundMusic();
 
-    // Fallback: Try to play on first user interaction if autoplay was blocked
+    // Try to play on first user interaction if autoplay was blocked
     const handleUserInteraction = async () => {
       if (backgroundMusicRef.current && backgroundMusicRef.current.paused) {
         try {
-          backgroundMusicRef.current.muted = false;
           await backgroundMusicRef.current.play();
         } catch (error) {
           // Still blocked
@@ -351,7 +333,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
       }
       if (nightMusicRef.current && nightMusicRef.current.paused) {
         try {
-          nightMusicRef.current.muted = false;
           await nightMusicRef.current.play();
         } catch (error) {
           // Still blocked
