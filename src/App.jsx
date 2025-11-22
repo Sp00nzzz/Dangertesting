@@ -301,14 +301,52 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
   
   // Start background music on component mount
   useEffect(() => {
-    if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.volume = 0.5; // Set to 50%
-      backgroundMusicRef.current.play();
-    }
-    if (nightMusicRef.current) {
-      nightMusicRef.current.volume = 0.2;
-      nightMusicRef.current.play();
-    }
+    const playBackgroundMusic = async () => {
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.volume = 0.5; // Set to 50%
+        try {
+          await backgroundMusicRef.current.play();
+        } catch (error) {
+          // Autoplay was prevented, will play on user interaction
+        }
+      }
+      if (nightMusicRef.current) {
+        nightMusicRef.current.volume = 0.2;
+        try {
+          await nightMusicRef.current.play();
+        } catch (error) {
+          // Autoplay was prevented, will play on user interaction
+        }
+      }
+    };
+
+    playBackgroundMusic();
+
+    // Try to play on first user interaction if autoplay was blocked
+    const handleUserInteraction = async () => {
+      if (backgroundMusicRef.current && backgroundMusicRef.current.paused) {
+        try {
+          await backgroundMusicRef.current.play();
+        } catch (error) {
+          // Still blocked
+        }
+      }
+      if (nightMusicRef.current && nightMusicRef.current.paused) {
+        try {
+          await nightMusicRef.current.play();
+        } catch (error) {
+          // Still blocked
+        }
+      }
+      // Remove listeners after first interaction
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
+    };
+
+    document.addEventListener('click', handleUserInteraction, { once: true });
+    document.addEventListener('touchstart', handleUserInteraction, { once: true });
+    document.addEventListener('keydown', handleUserInteraction, { once: true });
     
     return () => {
       if (backgroundMusicRef.current) {
@@ -317,6 +355,9 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
       if (nightMusicRef.current) {
         nightMusicRef.current.pause();
       }
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
     };
   }, []);
 
@@ -636,9 +677,9 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
       <audio ref={audioRef} src={speakingVoice} loop />
       
       {/* Background music */}
-      <audio ref={backgroundMusicRef} src={backgroundSound} loop />
+      <audio ref={backgroundMusicRef} src={backgroundSound} loop preload="auto" />
       {/* Night ambience */}
-      <audio ref={nightMusicRef} src={nightMusic} loop />
+      <audio ref={nightMusicRef} src={nightMusic} loop preload="auto" />
       
       {/* Bite sound */}
       <audio ref={biteSoundRef} src={biteSound} />
