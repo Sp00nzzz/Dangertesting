@@ -36,6 +36,7 @@ function App() {
   const [showHand, setShowHand] = useState(false);
   const [jumpscare, setJumpscare] = useState(false);
   const [blackScreen, setBlackScreen] = useState(false);
+  const [isGoodEnding, setIsGoodEnding] = useState(false);
   const [showWriting, setShowWriting] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [userText, setUserText] = useState('');
@@ -93,13 +94,10 @@ function App() {
       const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
       
       if (!API_KEY) {
-        console.error('Gemini API key not found. Please set VITE_GEMINI_API_KEY in your .env file');
         setGeminiResponse('Los: Error: API key not configured.');
         setIsReviewing(false);
         return;
       }
-      
-      console.log('Calling Gemini API with app idea:', appIdea);
       
       const ai = new GoogleGenAI({
         apiKey: API_KEY
@@ -123,11 +121,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
 
       let reviewText = response.text.trim();
       
-      // Log the full Gemini response
-      console.log('=== GEMINI API RESPONSE ===');
-      console.log('Full response:', reviewText);
-      console.log('==========================');
-      
       // Extract score from the response (look for patterns like "5/10", "5 out of 10", "rating: 5", etc.)
       const scorePatterns = [
         /(\d+)\s*\/\s*10/i,           // "5/10" or "5 / 10"
@@ -143,7 +136,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
         const match = reviewText.match(pattern);
         if (match) {
           extractedScore = parseInt(match[1], 10);
-          console.log('Extracted score:', extractedScore);
           break;
         }
       }
@@ -194,14 +186,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
         return trimmed.startsWith('Los:') ? trimmed : 'Los: ' + trimmed;
       });
       
-      // Log the split dialogues
-      console.log('=== SPLIT DIALOGUES ===');
-      console.log('Number of dialogues:', finalDialogues.length);
-      finalDialogues.forEach((dialogue, index) => {
-        console.log(`Dialogue ${index + 1}:`, dialogue);
-      });
-      console.log('========================');
-      
       setGeminiResponse(finalDialogues.join(' '));
       
       // Add score-based dialogue if score was extracted
@@ -215,7 +199,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
           scoreBasedDialogues.push('Los: to eliminate you to prevent anyone else from hearing this idea');
           scoreBasedDialogues.push('Los: don\'t take it personally...');
           scoreBasedDialogues.push('Los: Goodbye...');
-          console.log('Score is less than 5, adding negative dialogue and elimination sequence');
         } else if (extractedScore >= 5) {
           scoreBasedDialogues.push('Los: which means you get to live to see another day');
           scoreBasedDialogues.push('Los: Matter of fact...');
@@ -224,9 +207,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
           scoreBasedDialogues.push('Los: unfortunately...my time has come');
           scoreBasedDialogues.push('Los: maybe i will see you again in the next Danger Testing season');
           scoreBasedDialogues.push('Los: Farewell...');
-
-
-          console.log('Score is 5 or higher, adding positive dialogue');
         }
       }
       
@@ -236,7 +216,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
           ...prev,
           yes: [...prev.yes, ...finalDialogues, ...scoreBasedDialogues]
         };
-        console.log('Updated dialogues.yes length:', updated.yes.length);
         return updated;
       });
       
@@ -247,7 +226,6 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
         setCurrentDialogueIndex(5);
       }, 500);
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
       const errorText = 'Los: Error generating review. Please try again.';
       setGeminiResponse(errorText);
       
@@ -367,6 +345,8 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
   // Handle fade to black after fadeOutLos animation
   useEffect(() => {
     if (fadeOutLos) {
+      // Mark as good ending for fade transition
+      setIsGoodEnding(true);
       // Wait for fadeOutLos animation (5s) + 1 second pause = 6 seconds total
       const timer = setTimeout(() => {
         setBlackScreen(true);
@@ -585,12 +565,10 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
               setShowWriting(true);
             } else if (dialoguePath === 'yes' && dialogueIndex === 4) {
               // After "Mmm delicious..." dialogue, show rotating danger image and call Gemini API
-              console.log('Dialogue index 4 finished, calling Gemini API');
               setShowRotatingDanger(true);
               if (userText.trim()) {
                 callGeminiAPI(userText);
               } else {
-                console.log('No user text to review');
                 setShowRotatingDanger(false);
               }
             } else if (dialoguePath === 'yes' && dialogueIndex >= 5) {
@@ -679,7 +657,7 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
       
       {/* Black screen overlay */}
       <div 
-        className={`fixed inset-0 bg-black z-[200] transition-opacity duration-1000 ${blackScreen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 bg-black z-[200] ${isGoodEnding ? 'transition-opacity duration-1000' : ''} ${blackScreen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       />
       
       {/* Background Image */}
