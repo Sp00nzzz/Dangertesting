@@ -55,6 +55,7 @@ function App() {
   const [showRotatingDanger, setShowRotatingDanger] = useState(false);
   const [showGoodjob, setShowGoodjob] = useState(false);
   const [fadeOutLos, setFadeOutLos] = useState(false);
+  const [audioStarted, setAudioStarted] = useState(false);
   const audioRef = useRef(null);
   const backgroundMusicRef = useRef(null);
   const nightMusicRef = useRef(null);
@@ -299,16 +300,41 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
     }, 1000);
   };
   
-  // Start background music on component mount
+  // Start background music on component mount and first user interaction
   useEffect(() => {
-    if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.volume = 0.5; // Set to 50%
-      backgroundMusicRef.current.play();
-    }
-    if (nightMusicRef.current) {
-      nightMusicRef.current.volume = 0.2;
-      nightMusicRef.current.play();
-    }
+    const startBackgroundMusic = () => {
+      if (audioStarted) return;
+      
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.volume = 0.5; // Set to 50%
+        backgroundMusicRef.current.play().catch(() => {
+          // Ignore autoplay errors - will start on user interaction
+        });
+      }
+      if (nightMusicRef.current) {
+        nightMusicRef.current.volume = 0.2;
+        nightMusicRef.current.play().catch(() => {
+          // Ignore autoplay errors - will start on user interaction
+        });
+      }
+      setAudioStarted(true);
+    };
+
+    // Try to start immediately (may fail due to autoplay policy)
+    startBackgroundMusic();
+
+    // Also start on first user interaction (in case autoplay was blocked)
+    const handleFirstInteraction = () => {
+      startBackgroundMusic();
+      // Remove listeners after first interaction
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
+    };
+
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+    document.addEventListener('keydown', handleFirstInteraction);
     
     return () => {
       if (backgroundMusicRef.current) {
@@ -317,8 +343,11 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
       if (nightMusicRef.current) {
         nightMusicRef.current.pause();
       }
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+      document.removeEventListener('keydown', handleFirstInteraction);
     };
-  }, []);
+  }, [audioStarted]);
 
   // Handle black screen and bite sound after jumpscare
   useEffect(() => {
