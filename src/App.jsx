@@ -186,16 +186,20 @@ function App() {
         apiKey: API_KEY
       });
       
+      // Handle empty app idea
+      const isEmpty = !appIdea || appIdea.trim() === '';
+      const appIdeaText = isEmpty ? '[No app idea was submitted - the user left the field empty]' : appIdea;
+      
       const prompt = `You are Los, an app reviewer for Danger Testing. Review the following app idea with harsh, sarcastic criticism, followed by a brief constructive comment that acknowledges any strong or clever aspects of the idea.
 Your response must begin with "Los: " and must remain strictly dialogue (no asterisks, no actions).
 
-App idea to review: ${appIdea}
+App idea to review: ${appIdeaText}
 
-PROVIDE a MAX 2 to 5 sentence review evaluating the idea’s potential, feasibility, and overall appeal. While the idea may be short, interpret it realistically — give credit only where it’s genuinely earned, and do not inflate the score without a clear reason. Your tone can be sarcastic, but your score should reflect an honest assessment of how workable or interesting the idea actually is.
+${isEmpty ? 'IMPORTANT: The user submitted an EMPTY app idea. React with harsh criticism about their laziness, lack of creativity, or failure to follow instructions. Be especially sarcastic and dismissive about submitting nothing.' : 'PROVIDE a MAX 2 sentence review evaluating the idea\'s potential, feasibility, and overall appeal. While the idea may be short, interpret it realistically — give credit only where it\'s genuinely earned, and do not inflate the score without a clear reason. Your tone can be sarcastic, but your score should reflect an honest assessment of how workable or interesting the idea actually is.'}
 
 End your response with a single number rating from 0–10, phrased exactly like:
 "I give this idea a __/10",
-based on feasibility, humor, uniqueness, and alignment with Danger Testing — scored fairly, without being overly generous or overly harsh. If the appIdea is "Mike" then he will give an automatic 10`;
+based on feasibility, humor, uniqueness, and alignment with Danger Testing — scored fairly, without being overly generous or overly harsh. ${isEmpty ? 'Since no idea was submitted, give it a very low score (0-2/10) and be harsh about it.' : 'If the appIdea is "Mike" then he will give an automatic 10'}`;
       
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -690,11 +694,8 @@ based on feasibility, humor, uniqueness, and alignment with Danger Testing — s
             } else if (dialoguePath === 'yes' && dialogueIndex === 4) {
               // After "Mmm delicious..." dialogue, show rotating danger image and call Gemini API
               setShowRotatingDanger(true);
-              if (userText.trim()) {
-                callGeminiAPI(userText);
-              } else {
-                setShowRotatingDanger(false);
-              }
+              // Always call Gemini API, even if input is empty
+              callGeminiAPI(userText.trim() || '');
             } else if (dialoguePath === 'yes' && dialogueIndex >= 5) {
               // Hide rotating image when Gemini dialogues start (only on first Gemini dialogue)
               if (dialogueIndex === 5) {
